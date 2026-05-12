@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MediLink — Admin</title>
+  <link rel="stylesheet" href="assets/css/medilink.css"/>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">Medi<span>Link</span></div>
+  <div class="header-right">
+    <div class="user-pill">
+      ⚙️ <span id="userName">...</span>
+      <span class="role-badge" style="background:#ff6b35;color:white">Admin</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Administration</div>
+      <button class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> Vue globale
+      </button>
+      <button class="nav-item" onclick="showPage('ordonnances', this)">
+        <span class="icon">📋</span> Toutes ordonnances
+      </button>
+      <button class="nav-item" onclick="showPage('notifications', this)">
+        <span class="icon">🔔</span> Toutes notifications
+      </button>
+    </div>
+    <div class="nav-section" style="margin-top:16px">
+      <div class="nav-label">Monitoring</div>
+      <button class="nav-item" onclick="openLink('http://localhost:8761')">
+        <span class="icon">🌐</span> Eureka UI
+      </button>
+      <button class="nav-item" onclick="openLink('http://localhost:15672')">
+        <span class="icon">🐇</span> RabbitMQ UI
+      </button>
+      <button class="nav-item" onclick="openLink('http://localhost:8080')">
+        <span class="icon">🔐</span> Keycloak Admin
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ADMIN ══ -->
+    <div id="page-dashboard" class="page active">
+      <h1 style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:4px">Administration MediLink ⚙️</h1>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:0.9rem">Vue globale de tous les services et données</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statOrd">—</div>
+          <div class="stat-label">Ordonnances totales</div>
+        </div>
+        <div class="stat-card" style="--accent:#10b981">
+          <div class="stat-value" id="statActive" style="color:var(--success)">—</div>
+          <div class="stat-label">Actives</div>
+        </div>
+        <div class="stat-card" style="--accent:#ef4444">
+          <div class="stat-value" id="statCancelled" style="color:var(--danger)">—</div>
+          <div class="stat-label">Annulées</div>
+        </div>
+        <div class="stat-card" style="--accent:#3b82f6">
+          <div class="stat-value" id="statNotif" style="color:var(--info)">—</div>
+          <div class="stat-label">Notifications MongoDB</div>
+        </div>
+        <div class="stat-card" style="--accent:#8b5cf6">
+          <div class="stat-value" id="statUnread" style="color:#8b5cf6">—</div>
+          <div class="stat-label">Non lues</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏗️ État des microservices</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadStats()">🔄 Actualiser</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Service</th><th>Port</th><th>Base de données</th><th>Rôle</th><th>Lien</th></tr></thead>
+            <tbody>
+              <tr><td>🌐 Eureka Server</td><td>8761</td><td>—</td><td>Service Discovery</td><td><a href="http://localhost:8761" target="_blank" style="color:var(--accent)">Ouvrir</a></td></tr>
+              <tr><td>⚙️ Config Server</td><td>8888</td><td>—</td><td>Configuration centralisée</td><td><a href="http://localhost:8888/actuator/health" target="_blank" style="color:var(--accent)">Health</a></td></tr>
+              <tr><td>🔀 Gateway</td><td>8560</td><td>—</td><td>Routage + JWT Keycloak</td><td>—</td></tr>
+              <tr><td>💊 Ordonnance MS</td><td>8085</td><td>MySQL</td><td>CRUD + Feign + RabbitMQ publisher</td><td><a href="http://localhost:8085/swagger-ui.html" target="_blank" style="color:var(--accent)">Swagger</a></td></tr>
+              <tr><td>🔔 Notification MS</td><td>8084</td><td><strong>MongoDB</strong></td><td>Notifications + RabbitMQ consumer</td><td><a href="http://localhost:8084/swagger-ui.html" target="_blank" style="color:var(--accent)">Swagger</a></td></tr>
+              <tr><td>🔐 Keycloak</td><td>8080</td><td>dev-file</td><td>Auth + rôles DOCTOR/PATIENT/ADMIN</td><td><a href="http://localhost:8080" target="_blank" style="color:var(--accent)">Admin</a></td></tr>
+              <tr><td>🐇 RabbitMQ</td><td>5672/15672</td><td>—</td><td>Messaging asynchrone</td><td><a href="http://localhost:15672" target="_blank" style="color:var(--accent)">UI</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔁 Scénarios de communication vérifiés</div></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="scenario-banner">
+            <span class="scenario-tag">Scénario 1</span>
+            <span class="scenario-desc">POST /api/ordonnances → MySQL save → Feign → MongoDB save → RabbitMQ CREATED</span>
+          </div>
+          <div class="scenario-banner">
+            <span class="scenario-tag">Scénario 2</span>
+            <span class="scenario-desc">PUT /api/ordonnances/{id} → MySQL update → Feign → MongoDB save → RabbitMQ UPDATED</span>
+          </div>
+          <div class="scenario-banner">
+            <span class="scenario-tag">Scénario 3</span>
+            <span class="scenario-desc">PATCH /api/ordonnances/{id}/cancel → status CANCELLED MySQL → Feign → MongoDB → RabbitMQ CANCELLED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TOUTES ORDONNANCES ══ -->
+    <div id="page-ordonnances" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Toutes les ordonnances</div>
+          <div class="btn-group">
+            <button class="btn btn-primary btn-sm" onclick="loadAllOrdonnances()">🔄 Actualiser</button>
+          </div>
+        </div>
+        <div id="ordMsg"></div>
+        <div id="ordTable"><div class="loading"><div class="spinner"></div> Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TOUTES NOTIFICATIONS ══ -->
+    <div id="page-notifications" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔔 Toutes les notifications <span style="font-size:0.75rem;color:var(--muted);font-weight:400">(stockées dans MongoDB)</span></div>
+          <div class="btn-group">
+            <button class="btn btn-primary btn-sm" onclick="loadAllNotifications()">🔄 Actualiser</button>
+          </div>
+        </div>
+        <div id="notifMsg"></div>
+        <div id="notifList"><div class="loading"><div class="spinner"></div> Chargement...</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+  requireRole('ADMIN');
+
+  const user = getUser();
+  document.getElementById('userName').textContent = user?.preferred_username || 'Admin';
+
+  function openLink(url) { window.open(url, '_blank'); }
+
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (name === 'ordonnances')   loadAllOrdonnances();
+    if (name === 'notifications') loadAllNotifications();
+    if (name === 'dashboard')     loadStats();
+  }
+
+  function showAlert(boxId, msg, type) {
+    const el = document.getElementById(boxId);
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => el.innerHTML = '', 5000);
+  }
+
+  // ── Stats ──────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const ords = await apiGetAllOrdonnances();
+      document.getElementById('statOrd').textContent = ords.length;
+      document.getElementById('statActive').textContent = ords.filter(o => o.status === 'ACTIVE').length;
+      document.getElementById('statCancelled').textContent = ords.filter(o => o.status === 'CANCELLED').length;
+    } catch(e) {}
+    try {
+      const notifs = await apiGetAllNotifications();
+      document.getElementById('statNotif').textContent = notifs.length;
+      document.getElementById('statUnread').textContent = notifs.filter(n => n.status === 'SENT').length;
+    } catch(e) {}
+  }
+
+  // ── Toutes ordonnances ──────────────────────────────────────
+  async function loadAllOrdonnances() {
+    document.getElementById('ordTable').innerHTML = '<div class="loading"><div class="spinner"></div> Chargement depuis MySQL...</div>';
+    try {
+      const data = await apiGetAllOrdonnances();
+      if (!data.length) {
+        document.getElementById('ordTable').innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Aucune ordonnance.</p></div>';
+        return;
+      }
+      let html = `<div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Patient</th><th>Médecin</th><th>Diagnostic</th><th>Médicaments</th><th>Date</th><th>Statut</th><th>Action Admin</th></tr></thead><tbody>`;
+      data.forEach(o => {
+        const s = (o.status || 'ACTIVE').toLowerCase();
+        html += `<tr>
+          <td><strong>#${o.id}</strong></td>
+          <td>${o.patientName}<br><small style="color:var(--muted)">ID: ${o.patientId}</small></td>
+          <td>${o.doctorName}<br><small style="color:var(--muted)">ID: ${o.doctorId}</small></td>
+          <td>${o.diagnosis}</td>
+          <td style="font-size:0.78rem;color:var(--muted)">${(o.medications||[]).join(', ')}</td>
+          <td style="font-size:0.82rem">${o.dateCreation || '—'}</td>
+          <td><span class="badge badge-${s}">${o.status || 'ACTIVE'}</span></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="doDeleteOrd(${o.id})">🗑️ Supprimer</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('ordTable').innerHTML = html;
+    } catch(e) {
+      document.getElementById('ordTable').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  async function doDeleteOrd(id) {
+    if (!confirm(`⚠️ Supprimer l'ordonnance #${id} ? (ADMIN only — @PreAuthorize hasRole('ADMIN'))`)) return;
+    try {
+      await apiDeleteOrdonnance(id);
+      showAlert('ordMsg', `✅ Ordonnance #${id} supprimée définitivement de MySQL.`, 'success');
+      loadAllOrdonnances();
+      loadStats();
+    } catch(e) {
+      showAlert('ordMsg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  // ── Toutes notifications (MongoDB) ──────────────────────────
+  async function loadAllNotifications() {
+    document.getElementById('notifList').innerHTML = '<div class="loading"><div class="spinner"></div> Chargement depuis MongoDB...</div>';
+    try {
+      const data = await apiGetAllNotifications();
+      if (!data.length) {
+        document.getElementById('notifList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>Aucune notification dans MongoDB.</p></div>';
+        return;
+      }
+      let html = `<div class="table-wrap"><table>
+        <thead><tr><th>ID MongoDB</th><th>Type</th><th>Destinataire</th><th>Message</th><th>Statut</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
+      data.forEach(n => {
+        const s = (n.status || 'SENT').toLowerCase();
+        const date = n.createdAt ? n.createdAt.replace('T', ' ').substring(0, 16) : '—';
+        html += `<tr>
+          <td style="font-size:0.72rem;color:var(--muted);max-width:120px;word-break:break-all">${n.id}</td>
+          <td><span class="badge badge-${s === 'sent' ? 'sent' : 'read'}">${n.type}</span></td>
+          <td>${n.recipientName || '—'}<br><small style="color:var(--muted)">ID: ${n.userId}</small></td>
+          <td style="font-size:0.82rem;max-width:240px">${n.message}</td>
+          <td><span class="badge badge-${s}">${n.status}</span></td>
+          <td style="font-size:0.8rem">${date}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="doDeleteNotif('${n.id}')">🗑️</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('notifList').innerHTML = html;
+    } catch(e) {
+      document.getElementById('notifList').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  async function doDeleteNotif(id) {
+    if (!confirm('Supprimer cette notification de MongoDB ?')) return;
+    try {
+      await apiDeleteNotification(id);
+      showAlert('notifMsg', '✅ Notification supprimée de MongoDB.', 'success');
+      loadAllNotifications();
+      loadStats();
+    } catch(e) {
+      showAlert('notifMsg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  // Init
+  loadStats();
+</script>
+</body>
+</html>

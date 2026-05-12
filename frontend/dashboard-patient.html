@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MediLink — Patient</title>
+  <link rel="stylesheet" href="assets/css/medilink.css"/>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">Medi<span>Link</span></div>
+  <div class="header-right">
+    <div class="user-pill">
+      🤒 <span id="userName">...</span>
+      <span class="role-badge" style="background:var(--accent2);color:white">Patient</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Mon espace</div>
+      <button class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> Tableau de bord
+      </button>
+      <button class="nav-item" onclick="showPage('ordonnances', this)">
+        <span class="icon">📋</span> Mes ordonnances
+      </button>
+      <button class="nav-item" onclick="showPage('notifications', this)">
+        <span class="icon">🔔</span> Mes notifications
+        <span class="notif-count" id="notifBadge" style="display:none">0</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="page-dashboard" class="page active">
+      <h1 style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:4px">Bonjour <span id="patientDisplayName">...</span> 👋</h1>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:0.9rem">Consultez vos ordonnances et notifications</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Mes ordonnances</div>
+        </div>
+        <div class="stat-card" style="--accent:#10b981">
+          <div class="stat-value" id="statActive" style="color:var(--success)">—</div>
+          <div class="stat-label">Ordonnances actives</div>
+        </div>
+        <div class="stat-card" style="--accent:#3b82f6">
+          <div class="stat-value" id="statUnread" style="color:var(--info)">—</div>
+          <div class="stat-label">Notifications non lues</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💡 Comment fonctionne MediLink ?</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:0.88rem">
+            <strong>1. Création d'ordonnance</strong> — Votre médecin crée une ordonnance. Le système vous notifie
+            <em>immédiatement</em> via Feign Client (synchrone) et enregistre l'événement dans RabbitMQ (asynchrone).
+            Votre notification est stockée dans <strong>MongoDB</strong>.
+          </div>
+          <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:0.88rem">
+            <strong>2. Modification</strong> — Si votre médecin modifie le diagnostic ou les médicaments,
+            vous recevez automatiquement une notification ORDONNANCE_UPDATED.
+          </div>
+          <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:0.88rem">
+            <strong>3. Annulation</strong> — En cas d'annulation, vous êtes notifié via Feign (ORDONNANCE_CANCELLED)
+            et l'ordonnance passe au statut CANCELLED dans MySQL.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔔 Dernières notifications</div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('notifications', document.querySelector('.nav-item:nth-child(3)'))">Voir tout</button>
+        </div>
+        <div id="recentNotifs"><div class="loading"><div class="spinner"></div> Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ ORDONNANCES ══ -->
+    <div id="page-ordonnances" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Mes ordonnances</div>
+          <div class="btn-group">
+            <label style="text-transform:none;font-size:0.85rem;color:var(--muted);font-weight:400">Patient ID :</label>
+            <input type="number" id="myPatientId" value="2" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:90px"/>
+            <button class="btn btn-primary btn-sm" onclick="loadMyOrdonnances()">🔄 Charger</button>
+          </div>
+        </div>
+        <div id="ordMsg"></div>
+        <div id="ordTable"><div class="loading"><div class="spinner"></div> Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ NOTIFICATIONS ══ -->
+    <div id="page-notifications" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔔 Mes notifications</div>
+          <div class="btn-group">
+            <label style="text-transform:none;font-size:0.85rem;color:var(--muted);font-weight:400">User ID :</label>
+            <input type="number" id="myUserId" value="2" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:90px"/>
+            <button class="btn btn-primary btn-sm" onclick="loadMyNotifs()">🔄 Charger</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadUnread()">Non lues uniquement</button>
+          </div>
+        </div>
+        <div id="notifMsg"></div>
+        <div id="notifList"><div class="empty-state"><div class="empty-icon">🔔</div><p>Cliquez sur Charger pour voir vos notifications</p></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+  requireRole('PATIENT');
+
+  const user = getUser();
+  document.getElementById('userName').textContent = user?.preferred_username || 'Patient';
+  document.getElementById('patientDisplayName').textContent = user?.name || user?.preferred_username || 'Patient';
+
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (name === 'ordonnances') loadMyOrdonnances();
+    if (name === 'notifications') loadMyNotifs();
+  }
+
+  function showAlert(boxId, msg, type) {
+    const el = document.getElementById(boxId);
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => el.innerHTML = '', 5000);
+  }
+
+  // ── Stats ──────────────────────────────────────────────────
+  async function loadStats() {
+    const pid = document.getElementById('myPatientId')?.value || 2;
+    try {
+      const ords = await apiGetOrdonnancesByPatient(pid);
+      document.getElementById('statTotal').textContent = ords.length;
+      document.getElementById('statActive').textContent = ords.filter(o => o.status === 'ACTIVE').length;
+    } catch(e) {}
+    try {
+      const uid = document.getElementById('myUserId')?.value || 2;
+      const count = await apiCountUnread(uid);
+      document.getElementById('statUnread').textContent = count;
+      const badge = document.getElementById('notifBadge');
+      if (count > 0) { badge.style.display = 'inline'; badge.textContent = count; }
+    } catch(e) {}
+  }
+
+  // ── Recent notifications (dashboard) ─────────────────────
+  async function loadRecentNotifs() {
+    const uid = 2;
+    try {
+      const data = await apiGetNotificationsByUser(uid);
+      const recent = data.slice(0, 3);
+      if (!recent.length) {
+        document.getElementById('recentNotifs').innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>Aucune notification.</p></div>';
+        return;
+      }
+      let html = '';
+      recent.forEach(n => {
+        const isUnread = n.status === 'SENT';
+        const date = n.createdAt ? n.createdAt.replace('T', ' ').substring(0, 16) : '—';
+        html += `<div class="notif-item ${isUnread ? 'unread' : ''}">
+          <div class="notif-dot ${isUnread ? '' : 'read'}"></div>
+          <div class="notif-body">
+            <div class="notif-type">${n.type}</div>
+            <div class="notif-msg">${n.message}</div>
+            <div class="notif-date">${date}</div>
+          </div>
+          <span class="badge badge-${(n.status||'').toLowerCase()}">${n.status}</span>
+        </div>`;
+      });
+      document.getElementById('recentNotifs').innerHTML = html;
+    } catch(e) {
+      document.getElementById('recentNotifs').innerHTML = '<div class="alert alert-error">Impossible de charger les notifications.</div>';
+    }
+  }
+
+  // ── Mes ordonnances (READ ONLY pour patient) ───────────────
+  async function loadMyOrdonnances() {
+    const pid = document.getElementById('myPatientId').value || 2;
+    document.getElementById('ordTable').innerHTML = '<div class="loading"><div class="spinner"></div> Chargement...</div>';
+    try {
+      const data = await apiGetOrdonnancesByPatient(pid);
+      if (!data.length) {
+        document.getElementById('ordTable').innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Aucune ordonnance pour ce patient.</p></div>';
+        return;
+      }
+      let html = `<div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Médecin</th><th>Diagnostic</th><th>Médicaments</th><th>Notes</th><th>Date</th><th>Statut</th></tr></thead><tbody>`;
+      data.forEach(o => {
+        const s = (o.status || 'ACTIVE').toLowerCase();
+        html += `<tr>
+          <td><strong>#${o.id}</strong></td>
+          <td>${o.doctorName}</td>
+          <td>${o.diagnosis}</td>
+          <td style="font-size:0.8rem;color:var(--muted)">${(o.medications||[]).join(', ')}</td>
+          <td style="font-size:0.8rem;color:var(--muted)">${o.notes || '—'}</td>
+          <td style="font-size:0.82rem">${o.dateCreation || '—'}</td>
+          <td><span class="badge badge-${s}">${o.status || 'ACTIVE'}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('ordTable').innerHTML = html;
+    } catch(e) {
+      document.getElementById('ordTable').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  // ── Notifications ──────────────────────────────────────────
+  async function loadMyNotifs() {
+    const uid = document.getElementById('myUserId').value || 2;
+    try {
+      const data = await apiGetNotificationsByUser(uid);
+      renderNotifs(data);
+    } catch(e) {
+      document.getElementById('notifList').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  async function loadUnread() {
+    const uid = document.getElementById('myUserId').value || 2;
+    try {
+      const data = await apiGetUnreadByUser(uid);
+      renderNotifs(data);
+      showAlert('notifMsg', `${data.length} notification(s) non lue(s).`, 'info');
+    } catch(e) {}
+  }
+
+  function renderNotifs(data) {
+    if (!data.length) {
+      document.getElementById('notifList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>Aucune notification.</p></div>';
+      return;
+    }
+    let html = '';
+    data.forEach(n => {
+      const isUnread = n.status === 'SENT';
+      const date = n.createdAt ? n.createdAt.replace('T', ' ').substring(0, 16) : '—';
+      html += `<div class="notif-item ${isUnread ? 'unread' : ''}">
+        <div class="notif-dot ${isUnread ? '' : 'read'}"></div>
+        <div class="notif-body">
+          <div class="notif-type">${n.type}</div>
+          <div class="notif-msg">${n.message}</div>
+          <div class="notif-date">📅 ${date}</div>
+        </div>
+        ${isUnread
+          ? `<button class="btn btn-success btn-sm" onclick="doMarkRead('${n.id}')">Marquer lu ✓</button>`
+          : '<span class="badge badge-read">Lu</span>'}
+      </div>`;
+    });
+    document.getElementById('notifList').innerHTML = html;
+  }
+
+  async function doMarkRead(id) {
+    try {
+      await apiMarkAsRead(id);
+      showAlert('notifMsg', '✅ Notification marquée comme lue.', 'success');
+      loadMyNotifs();
+      loadStats();
+    } catch(e) {}
+  }
+
+  // Init
+  loadStats();
+  loadRecentNotifs();
+</script>
+</body>
+</html>

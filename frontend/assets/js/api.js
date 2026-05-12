@@ -1,93 +1,111 @@
-/**
- * MediLink API Layer
- * Wrapper for fetch with JWT authentication and error handling
- */
+// ── All API calls go through the Gateway on :8560 ──────────────
 
-const API_CONFIG = {
-  baseUrl: localStorage.getItem('ml_gateway') || 'http://localhost:8560',
-  token: localStorage.getItem('ml_token') || ''
-};
+// ════════════════════════════════════════════════
+//  ORDONNANCES  (MySQL via ordonnance-service)
+// ════════════════════════════════════════════════
 
-const updateConfig = () => {
-  API_CONFIG.baseUrl = localStorage.getItem('ml_gateway') || 'http://localhost:8560';
-  API_CONFIG.token = localStorage.getItem('ml_token') || '';
-};
+async function apiGetAllOrdonnances() {
+  const res = await fetch(GATEWAY + '/api/ordonnances', { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
 
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': API_CONFIG.token ? `Bearer ${API_CONFIG.token}` : ''
-});
+async function apiGetOrdonnancesByPatient(patientId) {
+  const res = await fetch(GATEWAY + `/api/ordonnances/patient/${patientId}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
 
-const handleResponse = async (response) => {
-  if (response.status === 401) {
-    localStorage.removeItem('ml_token');
-    window.location.reload();
-    throw new Error('Unauthorized');
-  }
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `HTTP ${response.status}`);
-  }
-  return response;
-};
+async function apiGetOrdonnancesByDoctor(doctorId) {
+  const res = await fetch(GATEWAY + `/api/ordonnances/doctor/${doctorId}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
 
-window.MediLinkAPI = {
-  get: async (endpoint) => {
-    updateConfig();
-    const res = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-      method: 'GET',
-      headers: getHeaders()
-    });
-    return handleResponse(res);
-  },
+// SCENARIO 1 — Crée ordonnance → Feign notifie patient + RabbitMQ CREATED
+async function apiCreateOrdonnance(dto) {
+  const res = await fetch(GATEWAY + '/api/ordonnances', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(dto)
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}: ${await res.text()}`);
+  return res.json();
+}
 
-  post: async (endpoint, data) => {
-    updateConfig();
-    const res = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(data)
-    });
-    return handleResponse(res);
-  },
+// SCENARIO 2 — Modifie ordonnance → Feign notifie patient + RabbitMQ UPDATED
+async function apiUpdateOrdonnance(id, dto) {
+  const res = await fetch(GATEWAY + `/api/ordonnances/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(dto)
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}: ${await res.text()}`);
+  return res.json();
+}
 
-  put: async (endpoint, data) => {
-    updateConfig();
-    const res = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(data)
-    });
-    return handleResponse(res);
-  },
+// SCENARIO 3 — Annule ordonnance → Feign notifie patient + RabbitMQ CANCELLED
+async function apiCancelOrdonnance(id) {
+  const res = await fetch(GATEWAY + `/api/ordonnances/${id}/cancel`, {
+    method: 'PATCH',
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
 
-  patch: async (endpoint) => {
-    updateConfig();
-    const res = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-      method: 'PATCH',
-      headers: getHeaders()
-    });
-    return handleResponse(res);
-  },
+// ADMIN only
+async function apiDeleteOrdonnance(id) {
+  const res = await fetch(GATEWAY + `/api/ordonnances/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.text();
+}
 
-  delete: async (endpoint) => {
-    updateConfig();
-    const res = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-    return handleResponse(res);
-  },
+// ════════════════════════════════════════════════
+//  NOTIFICATIONS  (MongoDB via notification-service)
+// ════════════════════════════════════════════════
 
-  upload: async (endpoint, formData) => {
-    updateConfig();
-    const res = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': API_CONFIG.token ? `Bearer ${API_CONFIG.token}` : ''
-      },
-      body: formData
-    });
-    return handleResponse(res);
-  }
-};
+async function apiGetAllNotifications() {
+  const res = await fetch(GATEWAY + '/api/notifications', { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
+
+async function apiGetNotificationsByUser(userId) {
+  const res = await fetch(GATEWAY + `/api/notifications/user/${userId}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
+
+async function apiGetUnreadByUser(userId) {
+  const res = await fetch(GATEWAY + `/api/notifications/user/${userId}/unread`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
+
+async function apiCountUnread(userId) {
+  const res = await fetch(GATEWAY + `/api/notifications/user/${userId}/count`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
+
+async function apiMarkAsRead(notifId) {
+  const res = await fetch(GATEWAY + `/api/notifications/${notifId}/read`, {
+    method: 'PATCH',
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.json();
+}
+
+async function apiDeleteNotification(notifId) {
+  const res = await fetch(GATEWAY + `/api/notifications/${notifId}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  return res.text();
+}

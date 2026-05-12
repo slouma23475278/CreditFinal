@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MediLink — Médecin</title>
+  <link rel="stylesheet" href="assets/css/medilink.css"/>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">Medi<span>Link</span></div>
+  <div class="header-right">
+    <div class="user-pill">
+      🩺 <span id="userName">...</span>
+      <span class="role-badge">Doctor</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Menu</div>
+      <button class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> Tableau de bord
+      </button>
+      <button class="nav-item" onclick="showPage('creer', this)">
+        <span class="icon">➕</span> Créer ordonnance
+      </button>
+      <button class="nav-item" onclick="showPage('ordonnances', this)">
+        <span class="icon">📋</span> Mes ordonnances
+      </button>
+      <button class="nav-item" onclick="showPage('notifications', this)">
+        <span class="icon">🔔</span> Notifications
+        <span class="notif-count" id="notifCount" style="display:none">0</span>
+      </button>
+    </div>
+    <div class="nav-section" style="margin-top:16px">
+      <div class="nav-label">Architecture</div>
+      <button class="nav-item" onclick="showPage('architecture', this)">
+        <span class="icon">🏗️</span> Scénarios
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="page-dashboard" class="page active">
+      <h1 style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:4px">Bonjour Dr. <span id="doctorDisplayName">...</span> 👋</h1>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:0.9rem">Voici un aperçu de votre activité</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Ordonnances totales</div>
+        </div>
+        <div class="stat-card" style="--accent:#10b981">
+          <div class="stat-value" id="statActive" style="color:var(--success)">—</div>
+          <div class="stat-label">Ordonnances actives</div>
+        </div>
+        <div class="stat-card" style="--accent:#ef4444">
+          <div class="stat-value" id="statCancelled" style="color:var(--danger)">—</div>
+          <div class="stat-label">Annulées</div>
+        </div>
+        <div class="stat-card" style="--accent:#3b82f6">
+          <div class="stat-value" id="statNotifs" style="color:var(--info)">—</div>
+          <div class="stat-label">Notifications envoyées</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔁 Scénarios de communication actifs</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="scenario-banner">
+            <span class="scenario-tag">Scénario 1</span>
+            <div class="scenario-desc">
+              <strong>Créer une ordonnance</strong> → Feign Client POST /api/notifications + RabbitMQ event CREATED
+            </div>
+          </div>
+          <div class="scenario-banner">
+            <span class="scenario-tag">Scénario 2</span>
+            <div class="scenario-desc">
+              <strong>Modifier une ordonnance</strong> → Feign Client POST /api/notifications + RabbitMQ event UPDATED
+            </div>
+          </div>
+          <div class="scenario-banner">
+            <span class="scenario-tag">Scénario 3</span>
+            <div class="scenario-desc">
+              <strong>Annuler une ordonnance</strong> → Feign Client POST /api/notifications + RabbitMQ event CANCELLED
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CRÉER ORDONNANCE ══ -->
+    <div id="page-creer" class="page">
+      <div class="scenario-banner" style="margin-bottom:20px">
+        <span class="scenario-tag">Scénario 1</span>
+        <div class="scenario-desc">
+          Après création → <strong>Feign Client</strong> appelle synchroniquement POST /api/notifications
+          + <strong>RabbitMQ</strong> publie l'event CREATED de façon asynchrone
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">➕ Nouvelle ordonnance</div>
+        </div>
+        <div id="createMsg"></div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ID Médecin</label>
+            <input type="number" id="doctorId" value="1"/>
+          </div>
+          <div class="form-group">
+            <label>Nom Médecin</label>
+            <input type="text" id="doctorName" value="Dr. Ben Ali"/>
+          </div>
+          <div class="form-group">
+            <label>ID Patient</label>
+            <input type="number" id="patientId" value="2"/>
+          </div>
+          <div class="form-group">
+            <label>Nom Patient</label>
+            <input type="text" id="patientName" value="Ahmed Trabelsi"/>
+          </div>
+          <div class="form-group full">
+            <label>Diagnostic</label>
+            <input type="text" id="diagnosis" value="Hypertension artérielle"/>
+          </div>
+          <div class="form-group full">
+            <label>Médicaments (séparés par virgule)</label>
+            <input type="text" id="medications" value="Amlodipine 5mg, Lisinopril 10mg"/>
+          </div>
+          <div class="form-group full">
+            <label>Notes</label>
+            <textarea id="notes">Prendre le matin à jeun. Contrôle dans 1 mois.</textarea>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="doCreate()">➕ Créer l'ordonnance</button>
+        </div>
+
+        <div style="margin-top:20px">
+          <div class="card-title" style="margin-bottom:10px">📡 Ce qui se passe côté backend :</div>
+          <div class="flow-steps">
+            <div class="flow-step" id="fs1">POST /api/ordonnances</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="fs2">MySQL save</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="fs3">Feign → /api/notifications</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="fs4">MongoDB save</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="fs5">RabbitMQ CREATED</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MES ORDONNANCES ══ -->
+    <div id="page-ordonnances" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Mes ordonnances</div>
+          <div class="btn-group">
+            <input type="number" id="filterPatient" placeholder="Filtrer patientId" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:160px"/>
+            <button class="btn btn-ghost btn-sm" onclick="loadByPatient()">Filtrer</button>
+            <button class="btn btn-primary btn-sm" onclick="loadOrdonnances()">🔄 Actualiser</button>
+          </div>
+        </div>
+        <div id="ordMsg"></div>
+        <div id="ordTable"><div class="loading"><div class="spinner"></div> Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- ══ NOTIFICATIONS ══ -->
+    <div id="page-notifications" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔔 Notifications reçues</div>
+          <div class="btn-group">
+            <input type="number" id="notifUserId" placeholder="User ID" value="2" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;width:120px"/>
+            <button class="btn btn-primary btn-sm" onclick="loadNotifications()">Charger</button>
+          </div>
+        </div>
+        <div id="notifList"><div class="empty-state"><div class="empty-icon">🔔</div><p>Entrez un User ID et cliquez Charger</p></div></div>
+      </div>
+    </div>
+
+    <!-- ══ ARCHITECTURE ══ -->
+    <div id="page-architecture" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏗️ Architecture MediLink</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Service</th><th>Port</th><th>Technologie</th><th>Base de données</th><th>Rôle</th></tr></thead>
+            <tbody>
+              <tr><td><strong>API Gateway</strong></td><td>8560</td><td>Spring Cloud Gateway</td><td>—</td><td>Routage + validation JWT Keycloak</td></tr>
+              <tr><td><strong>Eureka Server</strong></td><td>8761</td><td>Spring Cloud Netflix</td><td>—</td><td>Service Discovery</td></tr>
+              <tr><td><strong>Config Server</strong></td><td>8888</td><td>Spring Cloud Config</td><td>—</td><td>Configuration centralisée</td></tr>
+              <tr><td><strong>Ordonnance MS</strong></td><td>8085</td><td>Spring Boot + Feign + RabbitMQ</td><td>MySQL</td><td>CRUD ordonnances + publisher events</td></tr>
+              <tr><td><strong>Notification MS</strong></td><td>8084</td><td>Spring Boot + RabbitMQ</td><td><strong>MongoDB</strong></td><td>Stockage notifications NoSQL</td></tr>
+              <tr><td><strong>Keycloak</strong></td><td>8080</td><td>Keycloak 25</td><td>—</td><td>Auth + rôles DOCTOR/PATIENT/ADMIN</td></tr>
+              <tr><td><strong>RabbitMQ</strong></td><td>5672/15672</td><td>RabbitMQ 3.13</td><td>—</td><td>Messaging asynchrone entre MS</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔁 Les 3 scénarios Feign + RabbitMQ</div></div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <div>
+            <div class="scenario-banner">
+              <span class="scenario-tag">Scénario 1 — Création</span>
+              <span class="scenario-desc">POST /api/ordonnances → Feign → POST /api/notifications + RabbitMQ CREATED</span>
+            </div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-top:8px;padding-left:4px">
+              Le médecin crée une ordonnance. L'ordonnance-service la persiste en MySQL, puis appelle
+              <em>synchroniquement</em> le notification-service via Feign Client pour créer la notification
+              (stockée en MongoDB). En parallèle, un event RabbitMQ CREATED est publié de façon asynchrone.
+            </p>
+          </div>
+
+          <div>
+            <div class="scenario-banner">
+              <span class="scenario-tag">Scénario 2 — Modification</span>
+              <span class="scenario-desc">PUT /api/ordonnances/{id} → Feign → POST /api/notifications + RabbitMQ UPDATED</span>
+            </div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-top:8px;padding-left:4px">
+              Le médecin modifie diagnostic/médicaments. Le patient est notifié via Feign du nouveau diagnostic.
+              RabbitMQ publie l'event UPDATED pour traçabilité asynchrone.
+            </p>
+          </div>
+
+          <div>
+            <div class="scenario-banner">
+              <span class="scenario-tag">Scénario 3 — Annulation</span>
+              <span class="scenario-desc">PATCH /api/ordonnances/{id}/cancel → Feign → POST /api/notifications + RabbitMQ CANCELLED</span>
+            </div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-top:8px;padding-left:4px">
+              Le médecin annule l'ordonnance. Le statut passe à CANCELLED en MySQL. Feign notifie le patient.
+              RabbitMQ publie CANCELLED. Le notification-service consomme l'event via OrdonnanceEventConsumer.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+  requireRole('DOCTOR');
+
+  const user = getUser();
+  document.getElementById('userName').textContent = user?.preferred_username || user?.sub || 'Médecin';
+  document.getElementById('doctorDisplayName').textContent = user?.name || user?.preferred_username || 'Médecin';
+
+  // ── Navigation ─────────────────────────────────────────────
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (name === 'dashboard') loadStats();
+    if (name === 'ordonnances') loadOrdonnances();
+    if (name === 'notifications') {};
+  }
+
+  // ── Alerts ─────────────────────────────────────────────────
+  function showAlert(boxId, msg, type) {
+    const el = document.getElementById(boxId);
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => el.innerHTML = '', 5000);
+  }
+
+  // ── Stats ──────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const ords = await apiGetAllOrdonnances();
+      document.getElementById('statTotal').textContent = ords.length;
+      document.getElementById('statActive').textContent = ords.filter(o => o.status === 'ACTIVE').length;
+      document.getElementById('statCancelled').textContent = ords.filter(o => o.status === 'CANCELLED').length;
+    } catch(e) {}
+    try {
+      const notifs = await apiGetAllNotifications();
+      document.getElementById('statNotifs').textContent = notifs.length;
+    } catch(e) {}
+  }
+
+  // ── Créer ordonnance ───────────────────────────────────────
+  async function doCreate() {
+    const meds = document.getElementById('medications').value.split(',').map(m => m.trim()).filter(Boolean);
+    const dto = {
+      doctorId:    +document.getElementById('doctorId').value,
+      doctorName:  document.getElementById('doctorName').value,
+      patientId:   +document.getElementById('patientId').value,
+      patientName: document.getElementById('patientName').value,
+      diagnosis:   document.getElementById('diagnosis').value,
+      medications: meds,
+      notes:       document.getElementById('notes').value
+    };
+
+    // Animate flow steps
+    animateFlow();
+
+    try {
+      const result = await apiCreateOrdonnance(dto);
+      showAlert('createMsg',
+        `✅ Scénario 1 exécuté ! Ordonnance #${result.id} créée → Feign a notifié le patient #${dto.patientId} → RabbitMQ event CREATED publié.`,
+        'success');
+    } catch(e) {
+      showAlert('createMsg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  function animateFlow() {
+    const steps = ['fs1','fs2','fs3','fs4','fs5'];
+    steps.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('active-step');
+      }, i * 400);
+    });
+    setTimeout(() => {
+      steps.forEach(id => document.getElementById(id).classList.remove('active-step'));
+    }, steps.length * 400 + 2000);
+  }
+
+  // ── Load ordonnances ───────────────────────────────────────
+  async function loadOrdonnances() {
+    document.getElementById('ordTable').innerHTML = '<div class="loading"><div class="spinner"></div> Chargement...</div>';
+    try {
+      const data = await apiGetAllOrdonnances();
+      renderOrdTable(data);
+    } catch(e) {
+      document.getElementById('ordTable').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  async function loadByPatient() {
+    const pid = document.getElementById('filterPatient').value;
+    if (!pid) { loadOrdonnances(); return; }
+    try {
+      const data = await apiGetOrdonnancesByPatient(pid);
+      renderOrdTable(data);
+    } catch(e) {
+      showAlert('ordMsg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  function renderOrdTable(data) {
+    if (!data.length) {
+      document.getElementById('ordTable').innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Aucune ordonnance trouvée.</p></div>';
+      return;
+    }
+    let html = `<div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Patient</th><th>Diagnostic</th><th>Médicaments</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody>`;
+    data.forEach(o => {
+      const s = (o.status || 'ACTIVE').toLowerCase();
+      const meds = (o.medications || []).join(', ');
+      html += `<tr>
+        <td><strong>#${o.id}</strong></td>
+        <td>${o.patientName}<br><small style="color:var(--muted)">ID: ${o.patientId}</small></td>
+        <td>${o.diagnosis}</td>
+        <td style="font-size:0.8rem;color:var(--muted)">${meds}</td>
+        <td style="font-size:0.82rem">${o.dateCreation || '—'}</td>
+        <td><span class="badge badge-${s}">${o.status || 'ACTIVE'}</span></td>
+        <td>
+          <div class="btn-group">
+            ${o.status !== 'CANCELLED' ? `
+              <button class="btn btn-warning btn-sm" onclick="doCancel(${o.id})" title="Scénario 3">❌ Annuler</button>
+              <button class="btn btn-ghost btn-sm" onclick="openEdit(${o.id})" title="Scénario 2">✏️</button>
+            ` : '<span style="color:var(--muted);font-size:0.8rem">—</span>'}
+          </div>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('ordTable').innerHTML = html;
+  }
+
+  // ── Cancel (Scénario 3) ────────────────────────────────────
+  async function doCancel(id) {
+    if (!confirm(`Annuler l'ordonnance #${id} ? (Scénario 3 : Feign notifie le patient + RabbitMQ CANCELLED)`)) return;
+    try {
+      await apiCancelOrdonnance(id);
+      showAlert('ordMsg', `✅ Scénario 3 exécuté ! Ordonnance #${id} annulée → Feign a notifié le patient → RabbitMQ event CANCELLED.`, 'success');
+      loadOrdonnances();
+    } catch(e) {
+      showAlert('ordMsg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  // ── Edit (Scénario 2) ──────────────────────────────────────
+  async function openEdit(id) {
+    const diagnosis = prompt('Nouveau diagnostic (Scénario 2 — Feign notifiera le patient):');
+    if (!diagnosis) return;
+    try {
+      const all = await apiGetAllOrdonnances();
+      const ord = all.find(o => o.id === id);
+      if (!ord) return;
+      ord.diagnosis = diagnosis;
+      await apiUpdateOrdonnance(id, ord);
+      showAlert('ordMsg', `✅ Scénario 2 exécuté ! Ordonnance #${id} modifiée → Feign a notifié le patient du nouveau diagnostic → RabbitMQ UPDATED.`, 'success');
+      loadOrdonnances();
+    } catch(e) {
+      showAlert('ordMsg', '❌ ' + e.message, 'error');
+    }
+  }
+
+  // ── Notifications ──────────────────────────────────────────
+  async function loadNotifications() {
+    const uid = document.getElementById('notifUserId').value;
+    try {
+      const data = await apiGetNotificationsByUser(uid);
+      renderNotifs(data);
+      const unread = data.filter(n => n.status === 'SENT').length;
+      const badge = document.getElementById('notifCount');
+      if (unread > 0) { badge.style.display = 'inline'; badge.textContent = unread; }
+      else badge.style.display = 'none';
+    } catch(e) {
+      document.getElementById('notifList').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
+  }
+
+  function renderNotifs(data) {
+    if (!data.length) {
+      document.getElementById('notifList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>Aucune notification.</p></div>';
+      return;
+    }
+    let html = '';
+    data.forEach(n => {
+      const isUnread = n.status === 'SENT';
+      const date = n.createdAt ? n.createdAt.replace('T', ' ').substring(0, 16) : '—';
+      html += `<div class="notif-item ${isUnread ? 'unread' : ''}">
+        <div class="notif-dot ${isUnread ? '' : 'read'}"></div>
+        <div class="notif-body">
+          <div class="notif-type">${n.type}</div>
+          <div class="notif-msg">${n.message}</div>
+          <div class="notif-date">${date}</div>
+        </div>
+        ${isUnread ? `<button class="btn btn-success btn-sm" onclick="doMarkRead('${n.id}')">Lu ✓</button>` : '<span class="badge badge-read">Lu</span>'}
+      </div>`;
+    });
+    document.getElementById('notifList').innerHTML = html;
+  }
+
+  async function doMarkRead(id) {
+    try {
+      await apiMarkAsRead(id);
+      loadNotifications();
+    } catch(e) {}
+  }
+
+  // Init
+  loadStats();
+</script>
+</body>
+</html>

@@ -1,516 +1,120 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MediLink — Dashboard</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #333; }
-
-    header {
-      background: linear-gradient(135deg, #1a73e8, #0d47a1);
-      color: white; padding: 16px 32px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    header h1 { font-size: 1.5rem; }
-    .badge { background: #ff5722; color: white; border-radius: 50%; padding: 2px 7px; font-size: 0.75rem; margin-left: 6px; }
-
-    nav { background: #1565c0; display: flex; gap: 4px; padding: 0 32px; }
-    nav button {
-      background: none; border: none; color: rgba(255,255,255,.7);
-      padding: 12px 20px; cursor: pointer; font-size: 0.9rem; border-bottom: 3px solid transparent;
-    }
-    nav button.active, nav button:hover { color: white; border-bottom-color: #ff9800; }
-
-    .container { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
-
-    .card {
-      background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);
-      padding: 24px; margin-bottom: 20px;
-    }
-    .card h2 { font-size: 1.1rem; color: #1565c0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-    .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
-    label { font-size: 0.8rem; color: #666; font-weight: 600; text-transform: uppercase; }
-    input, textarea, select {
-      padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 8px;
-      font-size: 0.9rem; outline: none; transition: border .2s;
-    }
-    input:focus, textarea:focus, select:focus { border-color: #1a73e8; }
-
-    .btn {
-      padding: 10px 22px; border: none; border-radius: 8px;
-      cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all .2s;
-    }
-    .btn-primary { background: #1a73e8; color: white; }
-    .btn-primary:hover { background: #1557b0; }
-    .btn-danger  { background: #e53935; color: white; }
-    .btn-danger:hover { background: #b71c1c; }
-    .btn-warning { background: #fb8c00; color: white; }
-    .btn-warning:hover { background: #e65100; }
-    .btn-success { background: #43a047; color: white; }
-    .btn-success:hover { background: #2e7d32; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th { background: #e8f0fe; color: #1565c0; padding: 10px 14px; text-align: left; font-size: 0.8rem; text-transform: uppercase; }
-    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
-    tr:hover td { background: #fafafa; }
-
-    .status-active   { background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-    .status-cancelled{ background: #ffebee; color: #c62828; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-    .status-sent     { background: #e3f2fd; color: #1565c0; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-    .status-read     { background: #f3e5f5; color: #6a1b9a; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-
-    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.9rem; }
-    .alert-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #43a047; }
-    .alert-error   { background: #ffebee; color: #c62828; border-left: 4px solid #e53935; }
-    .alert-info    { background: #e3f2fd; color: #1565c0; border-left: 4px solid #1a73e8; }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    .grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
-    .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
-    .stat-card .value { font-size: 2rem; font-weight: 700; color: #1a73e8; }
-    .stat-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
-
-    .token-section { background: #fff8e1; border: 1.5px solid #ffc107; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-    .token-section label { color: #f57f17; }
-
-    #msgBox { min-height: 20px; }
-    #notifMsgBox { min-height: 20px; }
-  </style>
+  <title>MediLink — Connexion</title>
+  <link rel="stylesheet" href="assets/css/medilink.css"/>
 </head>
 <body>
+<div class="login-page">
 
-<header>
-  <h1>🏥 MediLink</h1>
-  <div style="display:flex;align-items:center;gap:16px">
-    <span id="tokenStatus" style="font-size:0.85rem;opacity:.8">Non connecté</span>
-    <button class="btn btn-warning" onclick="clearToken()">Déconnexion</button>
-  </div>
-</header>
+  <!-- LEFT: branding -->
+  <div class="login-left">
+    <div class="login-brand">Medi<span>Link</span></div>
+    <div class="login-subtitle">Plateforme de gestion des ordonnances médicales</div>
 
-<nav>
-  <button class="active" onclick="showTab('home', this)">🏠 Dashboard</button>
-  <button onclick="showTab('ordonnances', this)">📋 Ordonnances</button>
-  <button onclick="showTab('notifications', this)">🔔 Notifications <span class="badge" id="notifBadge">0</span></button>
-  <button onclick="showTab('config', this)">⚙️ Configuration</button>
-</nav>
-
-<div class="container">
-
-  <!-- ===== TOKEN CONFIG ===== -->
-  <div class="token-section">
-    <div class="form-row" style="align-items:flex-end">
-      <div class="form-group" style="flex:3">
-        <label>🔑 JWT Token (Keycloak)</label>
-        <input type="text" id="jwtToken" placeholder="Bearer eyJhbGciOiJSUzI1NiIsInR5..." />
+    <div class="login-features">
+      <div class="login-feature">
+        <div class="login-feature-icon">🏥</div>
+        <div>Microservices Spring Boot avec communication Feign + RabbitMQ</div>
       </div>
-      <div class="form-group" style="flex:1;min-width:140px">
+      <div class="login-feature">
+        <div class="login-feature-icon">🔐</div>
+        <div>Sécurisé par Keycloak — gestion des rôles DOCTOR / PATIENT / ADMIN</div>
+      </div>
+      <div class="login-feature">
+        <div class="login-feature-icon">🗄️</div>
+        <div>MySQL (ordonnances) + MongoDB (notifications) — architecture polyglotte</div>
+      </div>
+      <div class="login-feature">
+        <div class="login-feature-icon">🔔</div>
+        <div>Notifications temps réel via RabbitMQ asynchrone</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: login form -->
+  <div class="login-right">
+    <div class="login-card">
+      <h2>Connexion</h2>
+      <p>Entrez vos identifiants Keycloak pour accéder à votre espace.</p>
+
+      <div id="alertBox"></div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Nom d'utilisateur</label>
+        <input type="text" id="username" placeholder="doctor1 / patient1 / admin1" autocomplete="username"/>
+      </div>
+
+      <div class="form-group" style="margin-bottom:20px">
+        <label>Mot de passe</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="loginBtn">
+        Se connecter
+      </button>
+
+      <div class="divider">Configuration</div>
+
+      <div class="form-group" style="margin-bottom:8px">
         <label>Gateway URL</label>
-        <input type="text" id="gatewayUrl" value="http://localhost:8560" />
+        <input type="text" id="gatewayUrl" value="http://localhost:8560"/>
       </div>
-      <button class="btn btn-primary" onclick="saveConfig()">Enregistrer</button>
-    </div>
-  </div>
 
-  <!-- ===== HOME ===== -->
-  <div id="tab-home" class="tab-content active">
-    <div class="grid3">
-      <div class="stat-card">
-        <div class="value" id="statOrd">—</div>
-        <div class="label">📋 Ordonnances totales</div>
+      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:8px;font-size:0.8rem;color:var(--muted)">
+        <strong style="color:var(--text)">Comptes de test :</strong><br/>
+        🩺 doctor1 / password → Dashboard Médecin<br/>
+        🤒 patient1 / password → Dashboard Patient<br/>
+        ⚙️ admin1 / password → Dashboard Admin
       </div>
-      <div class="stat-card">
-        <div class="value" id="statNotif">—</div>
-        <div class="label">🔔 Notifications</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" style="color:#43a047">✓</div>
-        <div class="label">✅ Architecture active</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>🏗️ Architecture MediLink</h2>
-      <table>
-        <thead><tr><th>Service</th><th>Port</th><th>Technologie</th><th>Rôle</th></tr></thead>
-        <tbody>
-          <tr><td>Eureka Server</td><td>8761</td><td>Spring Cloud Netflix</td><td>Service Discovery</td></tr>
-          <tr><td>Config Server</td><td>8888</td><td>Spring Cloud Config</td><td>Configuration centralisée</td></tr>
-          <tr><td>API Gateway</td><td>8560</td><td>Spring Cloud Gateway + Keycloak</td><td>Routage + Sécurité</td></tr>
-          <tr><td>Ordonnance MS</td><td>8085</td><td>Spring Boot + MySQL + Feign + RabbitMQ</td><td>Gestion ordonnances</td></tr>
-          <tr><td>Notification MS</td><td>8084</td><td>Spring Boot + <strong>MongoDB</strong> + RabbitMQ</td><td>Notifications (NoSQL)</td></tr>
-          <tr><td>Keycloak</td><td>8080</td><td>Keycloak 25</td><td>Auth + Rôles</td></tr>
-          <tr><td>RabbitMQ</td><td>5672 / 15672</td><td>RabbitMQ 3.13</td><td>Messaging asynchrone</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>🔁 Scénarios de communication (Feign Client)</h2>
-      <table>
-        <thead><tr><th>Scénario</th><th>Déclencheur</th><th>Mécanisme</th></tr></thead>
-        <tbody>
-          <tr><td><strong>1. Création</strong></td><td>POST /api/ordonnances</td><td>Feign → POST /api/notifications + RabbitMQ CREATED</td></tr>
-          <tr><td><strong>2. Modification</strong></td><td>PUT /api/ordonnances/{id}</td><td>Feign → POST /api/notifications + RabbitMQ UPDATED</td></tr>
-          <tr><td><strong>3. Annulation</strong></td><td>PATCH /api/ordonnances/{id}/cancel</td><td>Feign → POST /api/notifications + RabbitMQ CANCELLED</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ===== ORDONNANCES ===== -->
-  <div id="tab-ordonnances" class="tab-content">
-    <div id="msgBox"></div>
-
-    <div class="card">
-      <h2>➕ Créer une ordonnance</h2>
-      <div class="form-row">
-        <div class="form-group">
-          <label>ID Médecin</label>
-          <input type="number" id="doctorId" value="1" />
-        </div>
-        <div class="form-group">
-          <label>Nom Médecin</label>
-          <input type="text" id="doctorName" value="Dr. Ben Ali" />
-        </div>
-        <div class="form-group">
-          <label>ID Patient</label>
-          <input type="number" id="patientId" value="2" />
-        </div>
-        <div class="form-group">
-          <label>Nom Patient</label>
-          <input type="text" id="patientName" value="Ahmed Trabelsi" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label>Diagnostic</label>
-          <input type="text" id="diagnosis" value="Hypertension artérielle" />
-        </div>
-        <div class="form-group" style="flex:2">
-          <label>Médicaments (séparés par virgule)</label>
-          <input type="text" id="medications" value="Amlodipine 5mg, Lisinopril 10mg" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Notes</label>
-          <input type="text" id="notes" value="Prendre le matin à jeun" />
-        </div>
-      </div>
-      <button class="btn btn-primary" onclick="createOrdonnance()">Créer l'ordonnance</button>
-    </div>
-
-    <div class="card">
-      <h2>📋 Liste des ordonnances</h2>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <button class="btn btn-primary" onclick="loadOrdonnances()">🔄 Actualiser</button>
-        <input type="number" id="filterPatientId" placeholder="Filtrer par patientId" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;"/>
-        <button class="btn btn-warning" onclick="filterByPatient()">Filtrer</button>
-      </div>
-      <div id="ordonnancesTable"><em style="color:#999">Cliquez sur Actualiser...</em></div>
-    </div>
-  </div>
-
-  <!-- ===== NOTIFICATIONS ===== -->
-  <div id="tab-notifications" class="tab-content">
-    <div id="notifMsgBox"></div>
-
-    <div class="card">
-      <h2>🔔 Notifications par utilisateur</h2>
-      <div class="form-row" style="align-items:flex-end">
-        <div class="form-group">
-          <label>User ID</label>
-          <input type="number" id="notifUserId" value="2" />
-        </div>
-        <button class="btn btn-primary" onclick="loadNotifications()">Charger</button>
-        <button class="btn btn-primary" onclick="loadAllNotifications()">Toutes les notifs</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>📬 Résultat</h2>
-      <div id="notificationsTable"><em style="color:#999">Cliquez sur Charger...</em></div>
-    </div>
-  </div>
-
-  <!-- ===== CONFIG ===== -->
-  <div id="tab-config" class="tab-content">
-    <div class="card">
-      <h2>⚙️ Obtenir un Token Keycloak</h2>
-      <div class="alert alert-info">
-        Configurez le realm <strong>medilink</strong> dans Keycloak sur <a href="http://localhost:8080" target="_blank">http://localhost:8080</a>
-        puis créez les rôles : <strong>DOCTOR</strong>, <strong>PATIENT</strong>, <strong>ADMIN</strong>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="kcUser" value="doctor1" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="kcPass" value="password" />
-        </div>
-        <div class="form-group">
-          <label>Client ID</label>
-          <input type="text" id="kcClient" value="medilink-client" />
-        </div>
-      </div>
-      <button class="btn btn-primary" onclick="getToken()">Obtenir Token</button>
-      <div id="tokenResult" style="margin-top:12px;word-break:break-all;font-size:0.8rem;"></div>
-    </div>
-
-    <div class="card">
-      <h2>📖 Guide de démarrage rapide</h2>
-      <ol style="padding-left:20px;line-height:2">
-        <li>Lancer : <code>docker-compose up --build</code></li>
-        <li>Attendre que tous les services soient UP (~2-3 min)</li>
-        <li>Ouvrir Keycloak : <a href="http://localhost:8080" target="_blank">http://localhost:8080</a> (admin/admin)</li>
-        <li>Créer realm <strong>medilink</strong> avec client <strong>medilink-client</strong></li>
-        <li>Créer rôles : <strong>DOCTOR</strong>, <strong>PATIENT</strong>, <strong>ADMIN</strong></li>
-        <li>Créer un user avec rôle DOCTOR, obtenir son token ici</li>
-        <li>Coller le token dans le champ JWT en haut et tester les APIs</li>
-        <li>Eureka : <a href="http://localhost:8761" target="_blank">http://localhost:8761</a></li>
-        <li>RabbitMQ UI : <a href="http://localhost:15672" target="_blank">http://localhost:15672</a> (guest/guest)</li>
-        <li>Swagger Ordonnances : <a href="http://localhost:8085/swagger-ui.html" target="_blank">http://localhost:8085/swagger-ui.html</a></li>
-        <li>Swagger Notifications : <a href="http://localhost:8084/swagger-ui.html" target="_blank">http://localhost:8084/swagger-ui.html</a></li>
-      </ol>
     </div>
   </div>
 
 </div>
 
+<script src="assets/js/auth.js"></script>
 <script>
-  let TOKEN = localStorage.getItem('ml_token') || '';
-  let GATEWAY = localStorage.getItem('ml_gateway') || 'http://localhost:8560';
+  // If already logged in, redirect
+  if (getToken()) redirectByRole();
 
-  document.getElementById('jwtToken').value = TOKEN;
-  document.getElementById('gatewayUrl').value = GATEWAY;
-  updateTokenStatus();
-
-  function saveConfig() {
-    TOKEN = document.getElementById('jwtToken').value.trim();
-    GATEWAY = document.getElementById('gatewayUrl').value.trim();
-    localStorage.setItem('ml_token', TOKEN);
-    localStorage.setItem('ml_gateway', GATEWAY);
-    updateTokenStatus();
-    showMsg('msgBox', 'Configuration enregistrée!', 'success');
-  }
-
-  function clearToken() {
-    TOKEN = ''; localStorage.removeItem('ml_token');
-    document.getElementById('jwtToken').value = '';
-    updateTokenStatus();
-  }
-
-  function updateTokenStatus() {
-    const el = document.getElementById('tokenStatus');
-    el.textContent = TOKEN ? '✅ Token configuré' : '❌ Non connecté';
-  }
-
-  function headers() {
-    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
-  }
-
-  function showMsg(box, msg, type) {
-    document.getElementById(box).innerHTML =
+  function showAlert(msg, type) {
+    document.getElementById('alertBox').innerHTML =
       `<div class="alert alert-${type}">${msg}</div>`;
-    setTimeout(() => { document.getElementById(box).innerHTML = ''; }, 4000);
   }
 
-  function showTab(name, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
-    if (name === 'home') loadStats();
-  }
+  async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const gw = document.getElementById('gatewayUrl').value.trim();
 
-  // ===== ORDONNANCES =====
-  async function createOrdonnance() {
-    const meds = document.getElementById('medications').value.split(',').map(m => m.trim());
-    const body = {
-      doctorId: +document.getElementById('doctorId').value,
-      doctorName: document.getElementById('doctorName').value,
-      patientId: +document.getElementById('patientId').value,
-      patientName: document.getElementById('patientName').value,
-      diagnosis: document.getElementById('diagnosis').value,
-      medications: meds,
-      notes: document.getElementById('notes').value
-    };
+    if (!username || !password) {
+      showAlert('Veuillez remplir tous les champs.', 'error');
+      return;
+    }
+
+    // Override GATEWAY if changed
+    if (gw) window.GATEWAY_OVERRIDE = gw;
+
+    const btn = document.getElementById('loginBtn');
+    btn.textContent = 'Connexion...';
+    btn.disabled = true;
+
     try {
-      const res = await fetch(GATEWAY + '/api/ordonnances', {
-        method: 'POST', headers: headers(), body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        showMsg('msgBox', `✅ Ordonnance #${data.id} créée! Le patient a été notifié via Feign + RabbitMQ.`, 'success');
-        loadOrdonnances();
-      } else {
-        showMsg('msgBox', `❌ Erreur ${res.status}: ${await res.text()}`, 'error');
-      }
-    } catch(e) {
-      showMsg('msgBox', '❌ Impossible de joindre le Gateway. Vérifiez que les services sont démarrés.', 'error');
+      await login(username, password);
+      redirectByRole();
+    } catch (e) {
+      showAlert('❌ ' + e.message, 'error');
+      btn.textContent = 'Se connecter';
+      btn.disabled = false;
     }
   }
 
-  async function loadOrdonnances() {
-    try {
-      const res = await fetch(GATEWAY + '/api/ordonnances', { headers: headers() });
-      if (!res.ok) { showMsg('msgBox', `❌ Erreur ${res.status}`, 'error'); return; }
-      const data = await res.json();
-      renderOrdonnances(data);
-    } catch(e) {
-      document.getElementById('ordonnancesTable').innerHTML = '<em style="color:red">Erreur de connexion.</em>';
-    }
-  }
-
-  async function filterByPatient() {
-    const pid = document.getElementById('filterPatientId').value;
-    if (!pid) { loadOrdonnances(); return; }
-    try {
-      const res = await fetch(GATEWAY + '/api/ordonnances/patient/' + pid, { headers: headers() });
-      const data = await res.json();
-      renderOrdonnances(data);
-    } catch(e) {
-      showMsg('msgBox', '❌ Erreur filtrage.', 'error');
-    }
-  }
-
-  function renderOrdonnances(data) {
-    if (!data.length) { document.getElementById('ordonnancesTable').innerHTML = '<em>Aucune ordonnance.</em>'; return; }
-    let html = `<table><thead><tr><th>ID</th><th>Patient</th><th>Médecin</th><th>Diagnostic</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead><tbody>`;
-    data.forEach(o => {
-      const s = (o.status||'ACTIVE').toLowerCase();
-      html += `<tr>
-        <td>${o.id}</td><td>${o.patientName}</td><td>${o.doctorName}</td>
-        <td>${o.diagnosis}</td><td>${o.dateCreation||'—'}</td>
-        <td><span class="status-${s}">${o.status||'ACTIVE'}</span></td>
-        <td style="display:flex;gap:6px">
-          <button class="btn btn-warning" style="padding:5px 10px;font-size:0.8rem" onclick="cancelOrdonnance(${o.id})">Annuler</button>
-          <button class="btn btn-danger" style="padding:5px 10px;font-size:0.8rem" onclick="deleteOrdonnance(${o.id})">Suppr.</button>
-        </td>
-      </tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById('ordonnancesTable').innerHTML = html;
-  }
-
-  async function cancelOrdonnance(id) {
-    try {
-      const res = await fetch(GATEWAY + '/api/ordonnances/' + id + '/cancel', { method: 'PATCH', headers: headers() });
-      if (res.ok) {
-        showMsg('msgBox', `✅ Ordonnance #${id} annulée! Patient notifié via Feign (Scénario 3).`, 'success');
-        loadOrdonnances();
-      } else showMsg('msgBox', `❌ Erreur ${res.status}`, 'error');
-    } catch(e) { showMsg('msgBox', '❌ Erreur connexion.', 'error'); }
-  }
-
-  async function deleteOrdonnance(id) {
-    if (!confirm('Supprimer l\'ordonnance #' + id + ' ?')) return;
-    try {
-      const res = await fetch(GATEWAY + '/api/ordonnances/' + id, { method: 'DELETE', headers: headers() });
-      if (res.ok) { showMsg('msgBox', `✅ Ordonnance #${id} supprimée.`, 'success'); loadOrdonnances(); }
-      else showMsg('msgBox', `❌ Erreur ${res.status}`, 'error');
-    } catch(e) { showMsg('msgBox', '❌ Erreur connexion.', 'error'); }
-  }
-
-  // ===== NOTIFICATIONS =====
-  async function loadNotifications() {
-    const uid = document.getElementById('notifUserId').value;
-    try {
-      const res = await fetch(GATEWAY + '/api/notifications/user/' + uid, { headers: headers() });
-      const data = await res.json();
-      renderNotifications(data);
-      document.getElementById('notifBadge').textContent = data.filter(n => n.status === 'SENT').length;
-    } catch(e) {
-      document.getElementById('notificationsTable').innerHTML = '<em style="color:red">Erreur de connexion.</em>';
-    }
-  }
-
-  async function loadAllNotifications() {
-    try {
-      const res = await fetch(GATEWAY + '/api/notifications', { headers: headers() });
-      const data = await res.json();
-      renderNotifications(data);
-    } catch(e) {
-      document.getElementById('notificationsTable').innerHTML = '<em style="color:red">Erreur.</em>';
-    }
-  }
-
-  function renderNotifications(data) {
-    if (!data.length) { document.getElementById('notificationsTable').innerHTML = '<em>Aucune notification.</em>'; return; }
-    let html = `<table><thead><tr><th>ID</th><th>Type</th><th>Message</th><th>Statut</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
-    data.forEach(n => {
-      const s = (n.status||'').toLowerCase();
-      html += `<tr>
-        <td style="font-size:0.75rem">${n.id}</td>
-        <td><code style="font-size:0.78rem">${n.type}</code></td>
-        <td style="max-width:300px;font-size:0.82rem">${n.message}</td>
-        <td><span class="status-${s}">${n.status}</span></td>
-        <td style="font-size:0.8rem">${n.createdAt ? n.createdAt.replace('T',' ').substring(0,16) : '—'}</td>
-        <td>${n.status === 'SENT'
-          ? `<button class="btn btn-success" style="padding:4px 10px;font-size:0.78rem" onclick="markRead('${n.id}')">Lu</button>`
-          : '✓'}</td>
-      </tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById('notificationsTable').innerHTML = html;
-  }
-
-  async function markRead(id) {
-    try {
-      await fetch(GATEWAY + '/api/notifications/' + id + '/read', { method: 'PATCH', headers: headers() });
-      loadNotifications();
-    } catch(e) {}
-  }
-
-  // ===== STATS =====
-  async function loadStats() {
-    try {
-      const res = await fetch(GATEWAY + '/api/ordonnances', { headers: headers() });
-      if (res.ok) document.getElementById('statOrd').textContent = (await res.json()).length;
-    } catch(e) {}
-    try {
-      const res = await fetch(GATEWAY + '/api/notifications', { headers: headers() });
-      if (res.ok) document.getElementById('statNotif').textContent = (await res.json()).length;
-    } catch(e) {}
-  }
-
-  // ===== TOKEN =====
-  async function getToken() {
-    const user = document.getElementById('kcUser').value;
-    const pass = document.getElementById('kcPass').value;
-    const client = document.getElementById('kcClient').value;
-    const url = 'http://localhost:8080/realms/medilink/protocol/openid-connect/token';
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'password', client_id: client,
-          username: user, password: pass
-        })
-      });
-      const data = await res.json();
-      if (data.access_token) {
-        TOKEN = data.access_token;
-        localStorage.setItem('ml_token', TOKEN);
-        document.getElementById('jwtToken').value = TOKEN;
-        document.getElementById('tokenResult').innerHTML = `<div class="alert alert-success">✅ Token obtenu! Valide ${data.expires_in}s.<br><small>${TOKEN.substring(0,80)}...</small></div>`;
-        updateTokenStatus();
-      } else {
-        document.getElementById('tokenResult').innerHTML = `<div class="alert alert-error">❌ ${JSON.stringify(data)}</div>`;
-      }
-    } catch(e) {
-      document.getElementById('tokenResult').innerHTML = `<div class="alert alert-error">❌ Keycloak inaccessible. Vérifiez qu'il tourne sur le port 8080.</div>`;
-    }
-  }
+  // Allow Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
 </script>
 </body>
 </html>
