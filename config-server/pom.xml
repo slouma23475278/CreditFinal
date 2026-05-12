@@ -12,7 +12,7 @@
     <groupId>com.medilink</groupId>
     <artifactId>config-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <n>config-server</n>
+    <name>config-server</name>
     <description>Spring Cloud Config Server - MediLink</description>
 
     <properties>

@@ -1,173 +1,134 @@
 /**
  * MediLink Application Router & Renderer
- * Handles page navigation and dynamic content loading
+ * Compatible with the existing index.html structure
  */
 
 const App = {
-  currentPage: 'dashboard',
-  flowRunning: false,
+  currentPage: 'home',
 
   init() {
-    this.bindEvents();
     this.updateTokenStatus();
-    this.loadDashboardData();
-    setInterval(() => this.liveUpdate(), 3000);
   },
 
-  bindEvents() {
-    document.addEventListener('DOMContentLoaded', () => {
-      MediLinkCharts.initMainChart();
-      MediLinkCharts.initDonutChart();
-    });
-  },
-
-  showPage(pageName, navEl) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
-    const page = document.getElementById(`page-${pageName}`);
-    if (page) page.classList.add('active');
-    if (navEl) navEl.classList.add('active');
-    
-    this.currentPage = pageName;
-    this.updatePageInfo(pageName);
-    
-    if (pageName === 'ordonnances') this.loadOrdonnances();
-    if (pageName === 'notifications') this.loadNotifications();
-    if (pageName === 'dashboard') this.loadDashboardData();
-  },
-
-  updatePageInfo(page) {
-    const titles = {
-      dashboard: ['Vue d\'ensemble', 'Tableau de bord médical distribué'],
-      notifications: ['Notifications', 'Centre de notifications — MongoDB'],
-      services: ['Microservices', 'Santé de l\'infrastructure Spring Cloud'],
-      patients: ['Patients', 'Gestion des patients actifs'],
-      ordonnances: ['Ordonnances', 'Création et suivi des prescriptions'],
-      appointments: ['Rendez-vous', 'Agenda médical'],
-      logs: ['Logs système', 'Visualisation des logs centralisés'],
-      gateway: ['API Gateway', 'Sécurité JWT · RBAC · Routage']
-    };
-    const info = titles[page] || [page, ''];
-    document.getElementById('pageTitle').textContent = info[0];
-    document.getElementById('pageSub').textContent = info[1];
-  },
-
-  async loadDashboardData() {
-    try {
-      const [ordoRes, notifRes] = await Promise.all([
-        MediLinkAPI.get('/api/ordonnances'),
-        MediLinkAPI.get('/api/notifications')
-      ]);
-      const ordos = await ordoRes.json();
-      const notifs = await notifRes.json();
-      document.getElementById('stat-ord').textContent = ordos.length;
-      document.getElementById('stat-notif').textContent = notifs.length;
-    } catch (e) {
-      console.error('Failed to load dashboard data', e);
-    }
-  },
-
-  async loadOrdonnances() {
-    try {
-      const res = await MediLinkAPI.get('/api/ordonnances');
-      const data = await res.json();
-      this.renderOrdonnancesTable(data);
-    } catch (e) {
-      this.showAlert('Erreur de chargement des ordonnances', 'error');
-    }
-  },
-
-  renderOrdonnancesTable(data) {
-    const tbody = document.getElementById('ordoTbody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = data.map(o => {
-      const statusClass = { 'ACTIVE': 'chip-green', 'UPDATED': 'chip-blue', 'CANCELLED': 'chip-red' }[o.status] || 'chip-blue';
-      return `<tr>
-        <td class="td-mono">${o.id}</td>
-        <td>${o.patientName}</td>
-        <td style="color:var(--text2)">${o.doctorName}</td>
-        <td>${o.diagnosis}</td>
-        <td style="color:var(--text2)">${o.medications?.join(', ') || ''}</td>
-        <td><div class="chip ${statusClass}">${o.status}</div></td>
-        <td class="td-mono">${o.dateCreation || '—'}</td>
-      </tr>`;
-    }).join('');
-  },
-
-  async createOrdonnance() {
-    const body = {
-      doctorId: +document.getElementById('doctorId').value,
-      doctorName: document.getElementById('doctorName').value,
-      patientId: +document.getElementById('patientId').value,
-      patientName: document.getElementById('patientName').value,
-      diagnosis: document.getElementById('diagnosis').value,
-      medications: document.getElementById('medications').value.split(',').map(m => m.trim()),
-      notes: document.getElementById('notes').value
-    };
-
-    try {
-      const res = await MediLinkAPI.post('/api/ordonnances', body);
-      const data = await res.json();
-      this.showAlert(`Ordonnance #${data.id} créée avec succès!`, 'success');
-      this.loadOrdonnances();
-    } catch (e) {
-      this.showAlert(`Erreur: ${e.message}`, 'error');
-    }
-  },
-
-  async loadNotifications() {
-    const userId = document.getElementById('notifUserId')?.value || '2';
-    try {
-      const res = await MediLinkAPI.get(`/api/notifications/user/${userId}`);
-      const data = await res.json();
-      this.renderNotificationsTable(data);
-      document.getElementById('notifBadge').textContent = data.filter(n => n.status === 'SENT').length;
-    } catch (e) {
-      this.showAlert('Erreur de chargement des notifications', 'error');
-    }
-  },
-
-  renderNotificationsTable(data) {
-    const tbody = document.getElementById('notificationsTable');
-    if (!tbody) return;
-    
-    tbody.innerHTML = data.length ? data.map(n => `
-      <div class="notif-item">
-        <div class="notif-icon">🔔</div>
-        <div style="flex:1">
-          <div class="notif-text">${n.message}</div>
-          <div class="notif-sub">${n.type} · ${n.status}</div>
-        </div>
-        <div class="notif-time">${n.createdAt?.substring(0,16) || '—'}</div>
-      </div>
-    `).join('') : '<em>Aucune notification</em>';
-  },
-
-  showAlert(message, type = 'info') {
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.textContent = message;
-    alert.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;padding:12px 20px;border-radius:8px;background:rgba(59,130,246,0.1);color:var(--accent);';
-    document.body.appendChild(alert);
-    setTimeout(() => alert.remove(), 4000);
-  },
-
-  liveUpdate() {
-    // Update live counters
-    const kpiOrdo = document.getElementById('kpi-ordo');
-    if (kpiOrdo && Math.random() < 0.3) {
-      const val = parseInt(kpiOrdo.textContent.replace(/\s/g, ''));
-      kpiOrdo.textContent = (val + 1).toLocaleString('fr-FR');
-    }
+  showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    this.currentPage = name;
+    if (name === 'home') this.loadStats();
   },
 
   updateTokenStatus() {
     const el = document.getElementById('tokenStatus');
-    if (el) el.textContent = MediLinkAuth.token ? '✅ Token configuré' : '❌ Non connecté';
+    if (el) el.textContent = TOKEN ? '✅ Token configuré' : '❌ Non connecté';
+  },
+
+  async loadStats() {
+    try {
+      const res = await fetch(GATEWAY + '/api/ordonnances', { headers: this.getHeaders() });
+      if (res.ok) document.getElementById('statOrd').textContent = (await res.json()).length;
+    } catch(e) { document.getElementById('statOrd').textContent = '—'; }
+    try {
+      const res = await fetch(GATEWAY + '/api/notifications', { headers: this.getHeaders() });
+      if (res.ok) document.getElementById('statNotif').textContent = (await res.json()).length;
+    } catch(e) { document.getElementById('statNotif').textContent = '—'; }
+  },
+
+  getHeaders() {
+    return { 
+      'Content-Type': 'application/json', 
+      'Authorization': TOKEN ? `Bearer ${TOKEN}` : '' 
+    };
+  },
+
+  showAlert(message, type = 'info') {
+    const box = document.getElementById('msgBox') || document.getElementById('notifMsgBox') || document.createElement('div');
+    box.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    setTimeout(() => { box.innerHTML = ''; }, 4000);
+  },
+
+  // Ordonnances functions
+  async loadOrdonnances() {
+    try {
+      const res = await fetch(GATEWAY + '/api/ordonnances', { headers: this.getHeaders() });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      this.renderOrdonnances(data);
+    } catch(e) {
+      document.getElementById('ordonnancesTable').innerHTML = '<em style="color:red">Erreur de connexion.</em>';
+    }
+  },
+
+  renderOrdonnances(data) {
+    if (!data.length) { 
+      document.getElementById('ordonnancesTable').innerHTML = '<em>Aucune ordonnance.</em>'; 
+      return; 
+    }
+    let html = `<table><thead><tr><th>ID</th><th>Patient</th><th>Médecin</th><th>Diagnostic</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead><tbody>`;
+    data.forEach(o => {
+      const s = (o.status||'ACTIVE').toLowerCase();
+      html += `<tr>
+        <td>${o.id}</td><td>${o.patientName}</td><td>${o.doctorName}</td>
+        <td>${o.diagnosis}</td><td>${o.dateCreation||'—'}</td>
+        <td><span class="status-${s}">${o.status||'ACTIVE'}</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-warning" style="padding:5px 10px;font-size:0.8rem" onclick="cancelOrdonnance(${o.id})">Annuler</button>
+          <button class="btn btn-danger" style="padding:5px 10px;font-size:0.8rem" onclick="deleteOrdonnance(${o.id})">Suppr.</button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('ordonnancesTable').innerHTML = html;
+  },
+
+  // Notifications functions  
+  async loadNotifications() {
+    const uid = document.getElementById('notifUserId')?.value || '2';
+    try {
+      const res = await fetch(GATEWAY + '/api/notifications/user/' + uid, { headers: this.getHeaders() });
+      const data = await res.json();
+      this.renderNotifications(data);
+      const badge = document.getElementById('notifBadge');
+      if (badge) badge.textContent = data.filter(n => n.status === 'SENT').length;
+    } catch(e) {
+      document.getElementById('notificationsTable').innerHTML = '<em style="color:red">Erreur de connexion.</em>';
+    }
+  },
+
+  renderNotifications(data) {
+    if (!data.length) { 
+      document.getElementById('notificationsTable').innerHTML = '<em>Aucune notification.</em>'; 
+      return; 
+    }
+    let html = `<table><thead><tr><th>ID</th><th>Type</th><th>Message</th><th>Statut</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
+    data.forEach(n => {
+      const s = (n.status||'').toLowerCase();
+      html += `<tr>
+        <td style="font-size:0.75rem">${n.id}</td>
+        <td><code style="font-size:0.78rem">${n.type}</code></td>
+        <td style="max-width:300px;font-size:0.82rem">${n.message}</td>
+        <td><span class="status-${s}">${n.status}</span></td>
+        <td style="font-size:0.8rem">${n.createdAt ? n.createdAt.replace('T',' ').substring(0,16) : '—'}</td>
+        <td>${n.status === 'SENT' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:0.78rem" onclick="markRead('${n.id}')">Lu</button>` : '✓'}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('notificationsTable').innerHTML = html;
+  },
+
+  async filterByPatient() {
+    const pid = document.getElementById('filterPatientId').value;
+    if (!pid) { this.loadOrdonnances(); return; }
+    try {
+      const res = await fetch(GATEWAY + '/api/ordonnances/patient/' + pid, { headers: this.getHeaders() });
+      const data = await res.json();
+      this.renderOrdonnances(data);
+    } catch(e) {
+      this.showAlert('❌ Erreur filtrage.', 'error');
+    }
   }
 };
 
-// Initialize on load
+// Initialize
 document.addEventListener('DOMContentLoaded', () => App.init());

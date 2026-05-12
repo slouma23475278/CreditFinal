@@ -38,6 +38,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
     networks:
       - medilink-network
 
@@ -51,9 +52,9 @@ services:
       - "5672:5672"
       - "15672:15672"    # Management UI
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 10
     networks:
       - medilink-network
@@ -64,14 +65,18 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: dev-file
     ports:
       - "8080:8080"
     command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/realms/master || exit 1"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8080/realms/master"]
+      interval: 30s
       timeout: 10s
-      retries: 15
+      retries: 20
+      start_period: 300s
     networks:
       - medilink-network
 
@@ -88,10 +93,11 @@ services:
     ports:
       - "8761:8761"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 60s
     networks:
       - medilink-network
 
@@ -109,10 +115,11 @@ services:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 120s
     networks:
       - medilink-network
 
@@ -133,8 +140,6 @@ services:
       eureka-server:
         condition: service_healthy
       config-server:
-        condition: service_healthy
-      keycloak:
         condition: service_healthy
     networks:
       - medilink-network
@@ -161,7 +166,7 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=guest
       - SPRING_RABBITMQ_PASSWORD=guest
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/medilink
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8080/realms/medilink
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/medilink/protocol/openid-connect/certs
     depends_on:
       mysql-db:
@@ -210,6 +215,7 @@ services:
 volumes:
   mysql_data:
   mongo_data:
+  keycloak_data:
 
 networks:
   medilink-network:

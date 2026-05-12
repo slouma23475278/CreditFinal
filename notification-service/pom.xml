@@ -12,7 +12,7 @@
     <groupId>com.medilink</groupId>
     <artifactId>notification-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <n>notification-service</n>
+    <name>notification-service</name>
     <description>Notification Microservice - MongoDB (technologie avancée) + RabbitMQ Consumer</description>
 
     <properties>
